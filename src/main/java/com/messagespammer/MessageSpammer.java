@@ -149,6 +149,15 @@ public class MessageSpammer extends JFrame {
     }
     
     private void startSpamming() {
+        // Ensure no previous thread is still running
+        if (spamThread != null && spamThread.isAlive()) {
+            JOptionPane.showMessageDialog(this, 
+                "A spam operation is already in progress!", 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
         String message = messageArea.getText().trim();
         if (message.isEmpty()) {
             JOptionPane.showMessageDialog(this, 
@@ -252,8 +261,11 @@ public class MessageSpammer extends JFrame {
         // Give user 5 seconds to switch to the target application
         statusLabel.setText("Starting in 5 seconds... Switch to your target application!");
         Timer timer = new Timer(5000, e -> {
-            if (running) {
+            // Check if still running (user might have clicked stop during countdown)
+            if (running && spamThread != null) {
                 spamThread.start();
+            } else if (!running) {
+                resetUI();
             }
         });
         timer.setRepeats(false);
@@ -266,6 +278,12 @@ public class MessageSpammer extends JFrame {
             spamThread.interrupt();
         }
         statusLabel.setText("Stopping...");
+        
+        // Reset UI immediately if stopped during countdown
+        // (if thread is not started yet or has finished)
+        if (spamThread == null || !spamThread.isAlive()) {
+            resetUI();
+        }
     }
     
     private void resetUI() {
